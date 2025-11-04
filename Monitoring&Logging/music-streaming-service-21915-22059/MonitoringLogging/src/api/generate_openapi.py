@@ -3,16 +3,27 @@ import os
 
 from src.api.main import app
 
-# This script generates the OpenAPI spec based on the defined FastAPI app.
-# Use: `python -m src.api.generate_openapi` from the container root directory.
+"""
+Utility script to regenerate the OpenAPI spec for the Monitoring & Logging container.
 
-# Get the OpenAPI schema
-openapi_schema = app.openapi()
+Usage:
+  python -m src.api.generate_openapi
 
-# Write to file
-output_dir = "interfaces"
-os.makedirs(output_dir, exist_ok=True)
-output_path = os.path.join(output_dir, "openapi.json")
+This will write the OpenAPI document to interfaces/openapi.json at the container root.
+"""
 
-with open(output_path, "w") as f:
-    json.dump(openapi_schema, f, indent=2)
+def main() -> None:
+    # Generate schema from the live app
+    schema = app.openapi()
+
+    # Ensure interfaces directory exists at container root
+    output_dir = os.path.join(os.getcwd(), "interfaces")
+    os.makedirs(output_dir, exist_ok=True)
+
+    output_path = os.path.join(output_dir, "openapi.json")
+    with open(output_path, "w") as f:
+        json.dump(schema, f, indent=2)
+    print(f"OpenAPI spec written to {output_path}")
+
+if __name__ == "__main__":
+    main()

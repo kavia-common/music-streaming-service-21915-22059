@@ -81,7 +81,7 @@
           "400": {
             "description": "Invalid metrics format"
           },
-          "401": {
+            "401": {
             "description": "Unauthorized"
           }
         }
