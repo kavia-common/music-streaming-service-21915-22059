@@ -1,13 +1,12 @@
 import json
 import os
 import threading
-import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 
 # -----------------------------------------------------------------------------
 # App initialization with metadata and tags for OpenAPI/Swagger
@@ -34,10 +33,15 @@ app.add_middleware(
 )
 
 # -----------------------------------------------------------------------------
+# Configuration flags
+# -----------------------------------------------------------------------------
+# Enable/disable JSON-file persistence of in-memory stores.
+OBS_ENABLE_PERSISTENCE = os.getenv("OBS_ENABLE_PERSISTENCE", "true").lower() in {"1", "true", "yes"}
+
+# -----------------------------------------------------------------------------
 # Simple API key auth via Authorization: Bearer <key>
 # Keys provided via OBS_API_KEYS env in format "name1:key1,name2:key2"
 # -----------------------------------------------------------------------------
-
 def _load_api_keys_from_env() -> Dict[str, str]:
     env_val = os.getenv("OBS_API_KEYS", "").strip()
     keys: Dict[str, str] = {}
@@ -85,7 +89,6 @@ async def auth_bearer_dependency(authorization: Optional[str] = Header(default=N
 # -----------------------------------------------------------------------------
 # Persistence layer (in-memory with optional JSON file snapshotting)
 # -----------------------------------------------------------------------------
-
 DATA_DIR = os.getenv("OBS_DATA_DIR", "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 LOGS_FILE = os.path.join(DATA_DIR, "logs.json")
@@ -109,6 +112,8 @@ def _load_json_file(path: str, default: Any) -> Any:
         return default
 
 def _save_json_file(path: str, data: Any) -> None:
+    if not OBS_ENABLE_PERSISTENCE:
+        return
     tmp = f"{path}.tmp"
     with open(tmp, "w") as f:
         json.dump(data, f, indent=2, default=str)
@@ -116,20 +121,24 @@ def _save_json_file(path: str, data: Any) -> None:
 
 def _bootstrap_store() -> None:
     with _store_lock:
-        logs = _load_json_file(LOGS_FILE, [])
-        metrics = _load_json_file(METRICS_FILE, [])
-        alerts = _load_json_file(ALERTS_FILE, {})
-        if isinstance(logs, list):
-            _LOGS.extend(logs)
-        if isinstance(metrics, list):
-            _METRICS.extend(metrics)
-        if isinstance(alerts, dict):
-            _ALERTS.update(alerts)
+        if OBS_ENABLE_PERSISTENCE:
+            logs = _load_json_file(LOGS_FILE, [])
+            metrics = _load_json_file(METRICS_FILE, [])
+            alerts = _load_json_file(ALERTS_FILE, {})
+            if isinstance(logs, list):
+                _LOGS.extend(logs)
+            if isinstance(metrics, list):
+                _METRICS.extend(metrics)
+            if isinstance(alerts, dict):
+                _ALERTS.update(alerts)
 
 _bootstrap_store()
 
 def _persist_async() -> None:
     # Persist stores in a simple background thread to avoid blocking
+    if not OBS_ENABLE_PERSISTENCE:
+        return
+
     def _persist():
         with _store_lock:
             _save_json_file(LOGS_FILE, _LOGS)
@@ -142,7 +151,6 @@ def _persist_async() -> None:
 # -----------------------------------------------------------------------------
 # Pydantic Models
 # -----------------------------------------------------------------------------
-
 class LogIngest(BaseModel):
     source: str = Field(..., description="Source service or component emitting the log")
     timestamp: datetime = Field(..., description="UTC timestamp of the log event")
@@ -161,7 +169,11 @@ class AlertRule(BaseModel):
     severity: str = Field(..., description="Severity label (e.g., info, warning, critical)")
     notification_channels: Optional[List[str]] = Field(default=None, description="Notification channels (email, slack)")
 
-class AlertOut(AlertRule):
+class AlertOut(BaseModel):
+    name: str = Field(..., description="Alert rule name")
+    expression: str = Field(..., description="Expression")
+    severity: str = Field(..., description="Severity")
+    notification_channels: List[str] = Field(default_factory=list, description="Channels")
     last_triggered: Optional[datetime] = Field(default=None, description="Last triggered timestamp")
     active: bool = Field(default=False, description="Whether any condition is currently active for this alert")
 
@@ -169,7 +181,6 @@ class AlertOut(AlertRule):
 # -----------------------------------------------------------------------------
 # Utility functions
 # -----------------------------------------------------------------------------
-
 def _paginate(items: List[Dict[str, Any]], page: int, limit: int) -> Tuple[List[Dict[str, Any]], int]:
     total = len(items)
     if limit <= 0:
@@ -189,7 +200,8 @@ def _filter_logs(source: Optional[str], level: Optional[str], start: Optional[da
     results: List[Dict[str, Any]] = []
     with _store_lock:
         for entry in _LOGS:
-            ts = datetime.fromisoformat(entry["timestamp"])
+            ts_val = entry.get("timestamp")
+            ts = datetime.fromisoformat(ts_val) if isinstance(ts_val, str) else ts_val
             if source and entry.get("source") != source:
                 continue
             if level and entry.get("level") != level:
@@ -212,7 +224,8 @@ def _filter_metrics(source: Optional[str], metric_name: Optional[str], start: Op
     results: List[Dict[str, Any]] = []
     with _store_lock:
         for entry in _METRICS:
-            ts = datetime.fromisoformat(entry["timestamp"])
+            ts_val = entry.get("timestamp")
+            ts = datetime.fromisoformat(ts_val) if isinstance(ts_val, str) else ts_val
             if source and entry.get("source") != source:
                 continue
             metrics_dict = entry.get("metrics", {})
@@ -229,7 +242,6 @@ def _filter_metrics(source: Optional[str], metric_name: Optional[str], start: Op
 # -----------------------------------------------------------------------------
 # Routes
 # -----------------------------------------------------------------------------
-
 @app.get("/", tags=["Health"], summary="Health Check")
 def health_check() -> Dict[str, str]:
     """
@@ -239,7 +251,6 @@ def health_check() -> Dict[str, str]:
         JSON with message Healthy.
     """
     return {"message": "Healthy"}
-
 
 # PUBLIC_INTERFACE
 @app.post(
@@ -263,7 +274,6 @@ async def ingest_logs(payload: LogIngest, _: str = Depends(auth_bearer_dependenc
     _persist_async()
     return {"status": "ok", "ingested": 1}
 
-
 # PUBLIC_INTERFACE
 @app.post(
     "/metrics/ingest",
@@ -284,7 +294,6 @@ async def ingest_metrics(payload: MetricIngest, _: str = Depends(auth_bearer_dep
         _METRICS.append(entry)
     _persist_async()
     return {"status": "ok", "ingested": 1}
-
 
 # PUBLIC_INTERFACE
 @app.get(
@@ -322,7 +331,6 @@ async def query_logs(
     items, total = _paginate(results, page, limit)
     return {"items": items, "page": page, "limit": limit, "total": total}
 
-
 # PUBLIC_INTERFACE
 @app.get(
     "/metrics/query",
@@ -359,7 +367,6 @@ async def query_metrics(
     items, total = _paginate(results, page, limit)
     return {"items": items, "page": page, "limit": limit, "total": total}
 
-
 # PUBLIC_INTERFACE
 @app.get(
     "/alerts",
@@ -374,7 +381,6 @@ async def get_alerts(_: str = Depends(auth_bearer_dependency)) -> Dict[str, Any]
         alerts = [dict(name=name, **data) for name, data in _ALERTS.items()]
     return {"alerts": alerts, "count": len(alerts)}
 
-
 # PUBLIC_INTERFACE
 @app.post(
     "/alerts",
@@ -388,21 +394,19 @@ async def get_alerts(_: str = Depends(auth_bearer_dependency)) -> Dict[str, Any]
     },
 )
 async def upsert_alert(rule: AlertRule, _: str = Depends(auth_bearer_dependency)) -> Dict[str, Any]:
-    """Create or update an alert rule. This stores rule and resets status."""
-    now = datetime.utcnow().isoformat()
+    """Create or update an alert rule. This stores rule and keeps prior status."""
     with _store_lock:
         current = _ALERTS.get(rule.name, {})
         stored: Dict[str, Any] = {
             "expression": rule.expression,
             "severity": rule.severity,
             "notification_channels": rule.notification_channels or [],
-            "last_triggered": current if current.get("active") else current if not current else current.get("last_triggered"),
+            "last_triggered": current.get("last_triggered"),
             "active": current.get("active", False),
         }
         _ALERTS[rule.name] = stored
     _persist_async()
     return {"status": "ok", "name": rule.name, "rule": _ALERTS[rule.name]}
-
 
 # PUBLIC_INTERFACE
 @app.get(
