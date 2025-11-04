@@ -12,7 +12,9 @@ Usage:
 This will write the OpenAPI document to interfaces/openapi.json at the container root.
 """
 
+# PUBLIC_INTERFACE
 def main() -> None:
+    """Generate OpenAPI schema from the FastAPI app and write it to interfaces/openapi.json."""
     # Generate schema from the live app
     schema = app.openapi()
 
@@ -24,6 +26,7 @@ def main() -> None:
     with open(output_path, "w") as f:
         json.dump(schema, f, indent=2)
     print(f"OpenAPI spec written to {output_path}")
+
 
 if __name__ == "__main__":
     main()
