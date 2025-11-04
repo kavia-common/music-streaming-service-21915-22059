@@ -63,8 +63,7 @@ OBS_KEYS_SET = set(OBS_KEYS.values())
 
 # PUBLIC_INTERFACE
 async def auth_bearer_dependency(authorization: Optional[str] = Header(default=None)) -> str:
-    """
-    Authenticate request using Authorization: Bearer <token> header.
+    """Authenticate request using Authorization: Bearer <token> header.
 
     Returns:
         str: The validated API key (token) string.

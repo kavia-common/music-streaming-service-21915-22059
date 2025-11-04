@@ -8,14 +8,18 @@
   "paths": {
     "/": {
       "get": {
-        "tags": ["Health"],
+        "tags": [
+          "Health"
+        ],
         "summary": "Health Check",
         "operationId": "health_check__get",
         "responses": {
           "200": {
             "description": "Service is healthy",
             "content": {
-              "application/json": { "schema": {} }
+              "application/json": {
+                "schema": {}
+              }
             }
           }
         }
@@ -23,7 +27,9 @@
     },
     "/logs/ingest": {
       "post": {
-        "tags": ["Logs"],
+        "tags": [
+          "Logs"
+        ],
         "summary": "Ingest logs",
         "description": "Ingest log entries from containers or agents.",
         "operationId": "ingest_logs_logs_ingest_post",
@@ -38,15 +44,23 @@
           }
         },
         "responses": {
-          "200": { "description": "Log ingested successfully" },
-          "400": { "description": "Invalid log format" },
-          "401": { "description": "Unauthorized" }
+          "200": {
+            "description": "Log ingested successfully"
+          },
+          "400": {
+            "description": "Invalid log format"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
         }
       }
     },
     "/metrics/ingest": {
       "post": {
-        "tags": ["Metrics"],
+        "tags": [
+          "Metrics"
+        ],
         "summary": "Ingest metrics",
         "description": "Ingest metrics from Prometheus exporters.",
         "operationId": "ingest_metrics_metrics_ingest_post",
@@ -54,92 +68,252 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/MetricIngest" }
+              "schema": {
+                "$ref": "#/components/schemas/MetricIngest"
+              }
             }
           }
         },
         "responses": {
-          "200": { "description": "Metrics ingested successfully" },
-          "400": { "description": "Invalid metrics format" },
-          "401": { "description": "Unauthorized" }
+          "200": {
+            "description": "Metrics ingested successfully"
+          },
+          "400": {
+            "description": "Invalid metrics format"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
         }
       }
     },
     "/logs/query": {
       "get": {
-        "tags": ["Logs"],
+        "tags": [
+          "Logs"
+        ],
         "summary": "Query logs",
         "description": "Query logs for dashboards and analytics.",
         "operationId": "query_logs_logs_query_get",
         "parameters": [
-          { "name": "source", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Filter by log source" },
-          { "name": "level", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Filter by log level" },
-          { "name": "from", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" }, "description": "ISO datetime start" },
-          { "name": "to", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" }, "description": "ISO datetime end" },
-          { "name": "page", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1 }, "description": "Page number (1-indexed)" },
-          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 500 }, "description": "Items per page" }
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by log source"
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by log level"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "ISO datetime start"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "ISO datetime end"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "description": "Items per page"
+          }
         ],
         "responses": {
-          "200": { "description": "Query results returned" },
-          "400": { "description": "Invalid query parameters" },
-          "401": { "description": "Unauthorized" }
+          "200": {
+            "description": "Query results returned"
+          },
+          "400": {
+            "description": "Invalid query parameters"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
         }
       }
     },
     "/metrics/query": {
       "get": {
-        "tags": ["Metrics"],
+        "tags": [
+          "Metrics"
+        ],
         "summary": "Query metrics",
         "description": "Query metrics for dashboards and analytics.",
         "operationId": "query_metrics_metrics_query_get",
         "parameters": [
-          { "name": "source", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Filter by metric source" },
-          { "name": "metric", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Filter entries that include a specific metric key" },
-          { "name": "from", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" }, "description": "ISO datetime start" },
-          { "name": "to", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" }, "description": "ISO datetime end" },
-          { "name": "page", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1 }, "description": "Page number (1-indexed)" },
-          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 500 }, "description": "Items per page" }
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by metric source"
+          },
+          {
+            "name": "metric",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter entries that include a specific metric key"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "ISO datetime start"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "ISO datetime end"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "description": "Items per page"
+          }
         ],
         "responses": {
-          "200": { "description": "Query results returned" },
-          "400": { "description": "Invalid query parameters" },
-          "401": { "description": "Unauthorized" }
+          "200": {
+            "description": "Query results returned"
+          },
+          "400": {
+            "description": "Invalid query parameters"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
         }
       }
     },
     "/alerts": {
       "get": {
-        "tags": ["Alerts"],
+        "tags": [
+          "Alerts"
+        ],
         "summary": "Get alerts",
         "description": "Retrieve current alerts and their status.",
         "operationId": "get_alerts_alerts_get",
-        "responses": { "200": { "description": "Alerts returned" }, "401": { "description": "Unauthorized" } }
+        "responses": {
+          "200": {
+            "description": "Alerts returned"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
       },
       "post": {
-        "tags": ["Alerts"],
+        "tags": [
+          "Alerts"
+        ],
         "summary": "Create or update alert rule",
         "description": "Create or update an alert rule for monitoring.",
         "operationId": "upsert_alert_alerts_post",
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": { "schema": { "$ref": "#/components/schemas/AlertRule" } }
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertRule"
+              }
+            }
           }
         },
         "responses": {
-          "200": { "description": "Alert rule created/updated" },
-          "400": { "description": "Invalid alert rule format" },
-          "401": { "description": "Unauthorized" }
+          "200": {
+            "description": "Alert rule created/updated"
+          },
+          "400": {
+            "description": "Invalid alert rule format"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
         }
       }
     },
     "/compliance/reports": {
       "get": {
-        "tags": ["Compliance"],
+        "tags": [
+          "Compliance"
+        ],
         "summary": "Get compliance reports",
         "description": "Retrieve compliance and audit reports.",
         "operationId": "get_compliance_reports_compliance_reports_get",
-        "responses": { "200": { "description": "Reports returned" }, "401": { "description": "Unauthorized" } }
+        "responses": {
+          "200": {
+            "description": "Reports returned"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
       }
     }
   },
@@ -148,40 +322,113 @@
       "LogIngest": {
         "type": "object",
         "properties": {
-          "source": { "type": "string", "description": "Source service or component emitting the log" },
-          "timestamp": { "type": "string", "format": "date-time", "description": "UTC timestamp of the log event" },
-          "level": { "type": "string", "description": "Log level (e.g. DEBUG, INFO, WARN, ERROR)" },
-          "message": { "type": "string", "description": "Log message text" },
-          "metadata": { "type": "object", "additionalProperties": true, "description": "Optional structured metadata" }
+          "source": {
+            "type": "string",
+            "description": "Source service or component emitting the log"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC timestamp of the log event"
+          },
+          "level": {
+            "type": "string",
+            "description": "Log level (e.g. DEBUG, INFO, WARN, ERROR)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Log message text"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Optional structured metadata"
+          }
         },
-        "required": ["source", "timestamp", "level", "message"]
+        "required": [
+          "source",
+          "timestamp",
+          "level",
+          "message"
+        ]
       },
       "MetricIngest": {
         "type": "object",
         "properties": {
-          "source": { "type": "string", "description": "Source service or component emitting the metrics" },
-          "timestamp": { "type": "string", "format": "date-time", "description": "UTC timestamp associated with the metrics payload" },
-          "metrics": { "type": "object", "additionalProperties": { "type": "number" }, "description": "Key/value numeric metrics" }
+          "source": {
+            "type": "string",
+            "description": "Source service or component emitting the metrics"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC timestamp associated with the metrics payload"
+          },
+          "metrics": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Key/value numeric metrics"
+          }
         },
-        "required": ["source", "timestamp", "metrics"]
+        "required": [
+          "source",
+          "timestamp",
+          "metrics"
+        ]
       },
       "AlertRule": {
         "type": "object",
         "properties": {
-          "name": { "type": "string", "description": "Unique alert rule name" },
-          "expression": { "type": "string", "description": "Expression to evaluate metrics (placeholder)" },
-          "severity": { "type": "string", "description": "Severity label (e.g., info, warning, critical)" },
-          "notification_channels": { "type": "array", "items": { "type": "string" }, "description": "Notification channels (email, slack)" }
+          "name": {
+            "type": "string",
+            "description": "Unique alert rule name"
+          },
+          "expression": {
+            "type": "string",
+            "description": "Expression to evaluate metrics (placeholder)"
+          },
+          "severity": {
+            "type": "string",
+            "description": "Severity label (e.g., info, warning, critical)"
+          },
+          "notification_channels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Notification channels (email, slack)"
+          }
         },
-        "required": ["name", "expression", "severity"]
+        "required": [
+          "name",
+          "expression",
+          "severity"
+        ]
       }
     }
   },
   "tags": [
-    { "name": "Health", "description": "Service health and readiness." },
-    { "name": "Logs", "description": "Log ingestion and querying." },
-    { "name": "Metrics", "description": "Metrics ingestion and querying." },
-    { "name": "Alerts", "description": "Alert rule and status management." },
-    { "name": "Compliance", "description": "Compliance and audit reporting." }
+    {
+      "name": "Health",
+      "description": "Service health and readiness."
+    },
+    {
+      "name": "Logs",
+      "description": "Log ingestion and querying."
+    },
+    {
+      "name": "Metrics",
+      "description": "Metrics ingestion and querying."
+    },
+    {
+      "name": "Alerts",
+      "description": "Alert rule and status management."
+    },
+    {
+      "name": "Compliance",
+      "description": "Compliance and audit reporting."
+    }
   ]
 }
